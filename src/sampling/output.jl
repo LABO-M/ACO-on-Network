@@ -1,7 +1,7 @@
 using CSV, DataFrames
 
 # Convert the numeric value to a string format with K, M, G, etc.
-function format_num(value::Int)
+function int_to_SI_prefix(value::Int)
     if value % 1_000_000_000 == 0
         return string(value ÷ 1_000_000_000) * "G"
     elseif value % 1_000_000 == 0
