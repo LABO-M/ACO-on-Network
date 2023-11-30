@@ -8,51 +8,46 @@ function main(args)
     @add_arg_table! s begin
         "--N"
         help = "Number of questions (quizzes)"
-        default = 100
+        default = 10
         arg_type = Int
         "--T"
         help = "Total number of time steps"
-        default = 10_000_000
+        default = 1000
         arg_type = Int
-        "--t0"
-        help = "Initial time steps for initialization"
-        default = 100_000
+        "--r"
+        help = "Initial number of ants"
+        default = 3
         arg_type = Int
+        "--omega"
+        help = "weight parameter of the network"
         "--alpha"
-        help = "Exponent parameter alpha"
-        default = 1.0
+        default = - 0.99
         arg_type = Float64
-        "--tau"
-        help = "Time scale of the pheromone evaporation. Use '-1' for infinite tau."
-        default = 100
-        arg_type = Int
+        help = "Exponent parameter alpha"
+        default = 0.99 # 1 - epsilon
+        arg_type = Float64
     end
 
     parsed_args = parse_args(args, s)
     N = parsed_args["N"]
     T = parsed_args["T"]
-    t0 = parsed_args["t0"]
+    r = parsed_args["r"]
+    omega = parsed_args["omega"]
     alpha = parsed_args["alpha"]
-    tau = parsed_args["tau"]
 
     # Log the simulation parameters
-    tau_str = (tau == -1) ? "inf" : int_to_SI_prefix(tau)
     println("Running simulation with the following parameters:")
-    println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), t0 = $(int_to_SI_prefix(t0)), alpha = $(alpha), tau = $(tau_str)")
+    println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), r = $(int_to_SI_prefix(r)), omega = $(omega), alpha = $(alpha)")
 
     # Run the simulation
-    if tau == -1
-        Z = Simulation.simulate_ants(N, T, t0, alpha)
-    else
-        Z = Simulation.simulate_ants(N, T, t0, alpha, tau)
-    end
+    Z = simulate_ants(N, T, r, omega, alpha)
 
     # Output Z values to CSV
     dir_Z = "data/Zt"
     if !isdir(dir_Z)
         mkpath(dir_Z)
     end
-    filename_Z = joinpath(dir_Z, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_t0$(int_to_SI_prefix(t0))_alpha$(alpha)_tau$(tau_str).csv")
+    filename_Z = joinpath(dir_Z, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha).csv")
     save_Z_to_csv(Z, filename_Z)
     end
 
