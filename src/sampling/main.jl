@@ -20,9 +20,9 @@ function main(args)
         arg_type = Int
         "--omega"
         help = "weight parameter of the network"
-        "--alpha"
         default = - 0.99
         arg_type = Float64
+        "--alpha"
         help = "Exponent parameter alpha"
         default = 0.99 # 1 - epsilon
         arg_type = Float64
@@ -40,7 +40,7 @@ function main(args)
     println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), r = $(int_to_SI_prefix(r)), omega = $(omega), alpha = $(alpha)")
 
     # Run the simulation
-    Z = simulate_ants(N, T, r, omega, alpha)
+    Z = Simulation.simulate_ants(N, T, r, omega, alpha)
 
     # Output Z values to CSV
     dir_Z = "data/Zt"
