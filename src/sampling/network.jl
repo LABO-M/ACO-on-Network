@@ -5,13 +5,17 @@ using Random, ProgressMeter, StatsBase
 function initialize_network(T::Int, r::Int)
     k_in = zeros(Int, T)
     k_out = zeros(Int, T)
+    link_matrix = zeros(Int, T, r)
 
-    for t in 1:(r + 1)
-        k_in[t] = r
-        k_out[t] = (r + 1) - t
+    k_out[1] = r
+
+    for t in 2:(r + 1)
+        k_in[t] = t - 1
+        k_out[t] = r - (t - 1)
+        link_matrix[t, 1:(t - 1)] .= 1:(t - 1)
     end
 
-    return k_in, k_out
+    return k_in, k_out, link_matrix
 end
 
 function generate_network(T::Int, r::Int, w::Float64)
@@ -24,16 +28,15 @@ end
 
 function network_popularity(T::Int, r::Int, w::Float64)
     # 初期条件の設定
-    k_in, k_out = initialize_network(T, r)
+    k_in, k_out, link_matrix = initialize_network(T, r)
     l = zeros(Float64, T)
 
     progressBar = Progress(T, 1, "Evoluting network")
 
     # ネットワークの進化
     for t in (r + 2):T
-        k_in[t] = r
-        # 人気度の更新（負の値を0に置き換える）
-        l .= max.(0, k_in .+ w .* k_out)
+        # 人気度の更新
+        l .= k_in .+ w .* k_out
 
         # 人気度が0より大きいアリを選択可能なリストに追加
         popular_ants = findall(x -> x > 0, l)
@@ -48,30 +51,36 @@ function network_popularity(T::Int, r::Int, w::Float64)
         probabilities = l[popular_ants] / total_popularity
         selected_ants = sample(popular_ants, Weights(probabilities), num_links, replace=false)
 
-        # 選ばれたアリの k_out を更新
-        k_out[selected_ants] .+= 1
+        # リンクの追加と出次数の更新
+        for ant in selected_ants
+            link_slot = findfirst(x -> x == 0, link_matrix[t, :])
+            link_matrix[t, link_slot] = ant
+            k_out[ant] += 1
+            k_in[t] += 1
+        end
+
         next!(progressBar)
     end
 
-    return k_out
+    return k_in, k_out, link_matrix
 end
 
 function network_lattice(T::Int, r::Int)
     # 初期条件の設定
-    k_in, k_out = initialize_network(T, r)
+    k_in, k_out, link_matrix = initialize_network(T, r)
 
     # ネットワークの進化
     for t in (r + 2):T
         k_in[t] = r
-
         # 既存のノードの出次数を更新
         k_out[1:max(1, t - r - 1)] .= r
         if t - r > 0
             k_out[(t - r):(t - 1)] .= (r - 1):-1:0
         end
+        link_matrix[t, :] .= (t-r):(t-1)
     end
 
-    return k_out
+    return k_in, k_out, link_matrix
 end
 
 end
