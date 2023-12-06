@@ -20,3 +20,10 @@ function save_Z_to_csv(Z::Vector{Float64}, filename::String)
     CSV.write(filename, df)
     println("Saved Z values to $filename")
 end
+
+# Function to save the link matrix to a CSV file
+function save_link_matrix_to_csv(link_matrix::Matrix{Int}, filename::String)
+    df = DataFrame(link_matrix, :auto)
+    CSV.write(filename, df)
+    println("Saved link matrix to $filename")
+end

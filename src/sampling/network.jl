@@ -31,7 +31,7 @@ function network_popularity(T::Int, r::Int, w::Float64)
     k_in, k_out, link_matrix = initialize_network(T, r)
     l = zeros(Float64, T)
 
-    progressBar = Progress(T, 1, "Evoluting network")
+    progressBar = Progress(T-(r+2), 1, "Evoluting network")
 
     # ネットワークの進化
     for t in (r + 2):T
