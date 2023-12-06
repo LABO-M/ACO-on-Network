@@ -12,39 +12,47 @@ function decision_function(Zj::Vector{Float64}, alpha::Float64, epsilon::Float64
 end
 
 # Initialize the simulation up to the initial time r.
-function initialize_simulation(N::Int, X::Vector{Int}, S::Vector{Float64}, Sj::Vector{Float64}, r::Int, k_out::Vector{Int})
-    for t in 1:r
-        X .= rand(0:1, N)
-        TP = sum(X)
-        S[t] = (t == 1 ? TP : S[t-1] + TP * k_out[t])
-        Sj .+= X .* TP * k_out[t]
+function initialize_simulation(N::Int, X::Matrix{Int}, S::Vector{Float64}, Sj::Vector{Float64}, TP::Vector{Int}, r::Int)
+    for t in 1:(r + 1)
+        X[:, t] .= rand(0:1, N)
+        TP[t] = sum(X[:, t])
+        S[t] = (t == 1 ? TP[t] : S[t-1] + TP[t])
+        Sj .+= X[:, t] .* TP[t]
     end
 end
 
 # Main simulation function
 function simulate_ants(N::Int, T::Int, r::Int, w::Float64, alpha::Float64)
-    X = zeros(Int, N)
+    X = zeros(Int, N, T)
     Sj = zeros(Float64, N)
-    S = zeros(Float64, T + r)
+    S = zeros(Float64, T)
+    TP = zeros(Int, T)
 
     # network_popularity関数からk_out配列を取得
-    k_out = Network.generate_network(T, r, w)
+    _, _, link_matrix = Network.generate_network(T, r, w)
 
     # Initialization
-    initialize_simulation(N, X, S, Sj, r, k_out)
+    initialize_simulation(N, X, S, Sj, TP, r)
 
-    for t in (r + 1):(r + T)
+    # Main loop
+    for t in (r + 2):T
         Zj = Sj ./ S[t-1]
         prob = decision_function(Zj, alpha, DEFAULT_EPSILON)
-        X .= rand(Float64, N) .< prob
-        TP = sum(X)
-        S[t] += S[t-1] * TP * k_out[t]
-        Sj .+= X .* TP * k_out[t]
+        rand_values = rand(Float64, N)
+        X[:, t] .= rand_values .< prob
+        TP[t] = sum(X[:, t])
+
+        # S(t) の更新
+        linked_ants = filter(x -> x > 0, link_matrix[t, :])  # tにリンクしているアリの選択
+        S[t] = sum(TP[linked_ants])
+
+        # S(j, t) の更新
+        Sj = sum(X[:, linked_ants] .* TP[linked_ants]', dims=2)[:]
     end
 
     Z = S ./ (r * N)
 
-    return Z
+    return Z, link_matrix
 
 end
 
