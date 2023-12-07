@@ -1,6 +1,6 @@
 module Simulation
 
-using Random, ProgressMeter
+using Random, ProgressMeter, Statistics, Distributed, SharedArrays
 
 include("network.jl")
 
@@ -22,14 +22,14 @@ function initialize_simulation(N::Int, X::Matrix{Int}, S::Vector{Float64}, Sj::V
 end
 
 # Main simulation function
-function simulate_ants(N::Int, T::Int, r::Int, w::Float64, alpha::Float64)
+function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, progressBar::ProgressMeter.Progress)
     X = zeros(Int, N, T)
     Sj = zeros(Float64, N)
     S = zeros(Float64, T)
     TP = zeros(Int, T)
 
     # network_popularity関数からk_out配列を取得
-    _, _, link_matrix = Network.generate_network(T, r, w)
+    _, _, link_matrix = Network.generate_network(T, r, omega)
 
     # Initialization
     initialize_simulation(N, X, S, Sj, TP, r)
@@ -48,12 +48,34 @@ function simulate_ants(N::Int, T::Int, r::Int, w::Float64, alpha::Float64)
 
         # S(j, t) の更新
         Sj = sum(X[:, linked_ants] .* TP[linked_ants]', dims=2)[:]
+        next!(progressBar)
     end
 
     Z = S ./ (r * N)
 
     return Z
 
+end
+
+# Function to sample Z values
+function sample_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, samples::Int)::Tuple{Vector{Float64}, Vector{Float64}}
+    Z_samples = SharedArray{Float64}(T, samples)
+
+    roop_num = T - (r + 1)
+    progressBar = Progress(samples * roop_num, 1, "Samples: ")
+    ProgressMeter.update!(progressBar, 0)
+
+    @sync @distributed for i in 1:samples
+        Z_samples[:, i] = simulate_ants(N, T, r, omega, alpha, progressBar)
+    end
+
+    println("Finished simulation")
+
+    # Calculate mean and standard deviation values
+    Z_mean = mean(Z_samples, dims=2)
+    Z_std = std(Z_samples, dims=2)
+
+    return vec(Z_mean), vec(Z_std)
 end
 
 end
