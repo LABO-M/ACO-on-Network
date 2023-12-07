@@ -1,6 +1,6 @@
 module Network
 
-using Random, ProgressMeter, StatsBase
+using Random, StatsBase
 
 function initialize_network(T::Int, r::Int)
     k_in = zeros(Int, T)
@@ -18,25 +18,23 @@ function initialize_network(T::Int, r::Int)
     return k_in, k_out, link_matrix
 end
 
-function generate_network(T::Int, r::Int, w::Float64)
-    if w == -1.0
+function generate_network(T::Int, r::Int, omega::Float64)
+    if omega == -1.0
         return network_lattice(T, r)
     else
-        return network_popularity(T, r, w)
+        return network_popularity(T, r, omega)
     end
 end
 
-function network_popularity(T::Int, r::Int, w::Float64)
+function network_popularity(T::Int, r::Int, omega::Float64)
     # 初期条件の設定
     k_in, k_out, link_matrix = initialize_network(T, r)
     l = zeros(Float64, T)
 
-    progressBar = Progress(T-(r+2), 1, "Evoluting network")
-
     # ネットワークの進化
     for t in (r + 2):T
         # 人気度の更新
-        l .= k_in .+ w .* k_out
+        l .= k_in .+ omega .* k_out
 
         # 人気度が0より大きいアリを選択可能なリストに追加
         popular_ants = findall(x -> x > 0, l)
@@ -58,8 +56,6 @@ function network_popularity(T::Int, r::Int, w::Float64)
             k_out[ant] += 1
             k_in[t] += 1
         end
-
-        next!(progressBar)
     end
 
     return k_in, k_out, link_matrix

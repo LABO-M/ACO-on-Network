@@ -18,7 +18,7 @@ function main(args)
 
         "--r"
         help = "Initial number of ants"
-        default = 1000
+        default = 100
         arg_type = Int
 
         "--omega"
@@ -28,8 +28,14 @@ function main(args)
 
         "--alpha"
         help = "Exponent parameter alpha"
-        default = 1.01 # 1 - epsilon
+        default = 1.01 # 1/(1 - epsilon)
         arg_type = Float64
+
+        "--sample"
+        help = "Sample size."
+        default = 100
+        arg_type = Int
+
     end
 
     parsed_args = parse_args(args, s)
@@ -38,27 +44,22 @@ function main(args)
     r = parsed_args["r"]
     omega = parsed_args["omega"]
     alpha = parsed_args["alpha"]
+    samples = parsed_args["sample"]
 
     # Log the simulation parameters
     println("Running simulation with the following parameters:")
-    println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), r = $(int_to_SI_prefix(r)), omega = $(omega), alpha = $(alpha)")
+    println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), r = $(int_to_SI_prefix(r)), omega = $(omega), alpha = $(alpha), samples = $(int_to_SI_prefix(samples))")
 
     # Run the simulation
-    Z, link_matrix = Simulation.simulate_ants(N, T, r, omega, alpha)
+    Z_mean, Z_std = Simulation.sample_ants(N, T, r, omega, alpha, samples)
 
     # Output Z values to CSV
     dir_Z = "data/Zt"
-    dir_link = "data/link_matrix"
     if !isdir(dir_Z)
         mkpath(dir_Z)
     end
-    if !isdir(dir_link)
-        mkpath(dir_link)
-    end
     filename_Z = joinpath(dir_Z, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha).csv")
-    save_Z_to_csv(Z, filename_Z)
-    filename_link = joinpath(dir_link, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha).csv")
-    save_link_matrix_to_csv(link_matrix, filename_link)
+    save_Z_to_csv(Z_mean, Z_std, filename_Z)
     end
 
 # Entry point of the script
