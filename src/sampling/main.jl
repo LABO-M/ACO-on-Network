@@ -44,21 +44,15 @@ function main(args)
     println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), r = $(int_to_SI_prefix(r)), omega = $(omega), alpha = $(alpha)")
 
     # Run the simulation
-    Z, link_matrix = Simulation.simulate_ants(N, T, r, omega, alpha)
+    Z = Simulation.simulate_ants(N, T, r, omega, alpha)
 
     # Output Z values to CSV
     dir_Z = "data/Zt"
-    dir_link = "data/link_matrix"
     if !isdir(dir_Z)
         mkpath(dir_Z)
     end
-    if !isdir(dir_link)
-        mkpath(dir_link)
-    end
     filename_Z = joinpath(dir_Z, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha).csv")
     save_Z_to_csv(Z, filename_Z)
-    filename_link = joinpath(dir_link, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha).csv")
-    save_link_matrix_to_csv(link_matrix, filename_link)
     end
 
 # Entry point of the script

@@ -52,7 +52,7 @@ function simulate_ants(N::Int, T::Int, r::Int, w::Float64, alpha::Float64)
 
     Z = S ./ (r * N)
 
-    return Z, link_matrix
+    return Z
 
 end
 
