@@ -14,9 +14,8 @@ function int_to_SI_prefix(value::Int)
 end
 
 # Function to save Z values to a CSV file with optional downsampling
-function save_Z_to_csv(Z_mean::Vector{Float64}, Z_std::Vector{Float64}, filename::String)
-    t_values = collect(1:length(Z_mean))
-    df = DataFrame(t=t_values, Z=Z_mean, std=Z_std)
+function save_Z_to_csv(Zj_last::Vector{Float64}, filename::String)
+    df = DataFrame(Zj=Zj_last)
     CSV.write(filename, df)
-    println("Saved Z values to $filename")
+    println("Saved Zj values to $filename")
 end

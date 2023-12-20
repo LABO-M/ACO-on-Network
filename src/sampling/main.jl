@@ -33,7 +33,7 @@ function main(args)
 
         "--sample"
         help = "Sample size."
-        default = 100
+        default = 10
         arg_type = Int
 
     end
@@ -51,15 +51,15 @@ function main(args)
     println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), r = $(int_to_SI_prefix(r)), omega = $(omega), alpha = $(alpha), samples = $(int_to_SI_prefix(samples))")
 
     # Run the simulation
-    Z_mean, Z_std = Simulation.sample_ants(N, T, r, omega, alpha, samples)
+    Zj_last = Simulation.sample_ants(N, T, r, omega, alpha, samples)
 
     # Output Z values to CSV
-    dir_Z = "data/Zt"
+    dir_Z = "data/Zj"
     if !isdir(dir_Z)
         mkpath(dir_Z)
     end
     filename_Z = joinpath(dir_Z, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha).csv")
-    save_Z_to_csv(Z_mean, Z_std, filename_Z)
+    save_Z_to_csv(Zj_last, filename_Z)
     end
 
 # Entry point of the script

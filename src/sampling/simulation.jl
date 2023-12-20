@@ -27,6 +27,7 @@ function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, p
     Sj = zeros(Float64, N)
     S = zeros(Float64, T)
     TP = zeros(Int, T)
+    Zj_last = zeros(Float64, 100*N) # Zjの最後の100ステップ分を保存
 
     # network_popularity関数からk_out配列を取得
     _, _, link_matrix = Network.generate_network(T, r, omega)
@@ -37,6 +38,10 @@ function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, p
     # Main loop
     for t in (r + 2):T
         Zj = Sj ./ S[t-1]
+        if t > T - 100
+            start_idx = (t - (T - 99)) * N
+            Zj_last[start_idx + 1 : start_idx + N] = Zj
+        end
         prob = decision_function(Zj, alpha, DEFAULT_EPSILON)
         rand_values = rand(Float64, N)
         X[:, t] .= rand_values .< prob
@@ -53,29 +58,27 @@ function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, p
 
     Z = S ./ (r * N)
 
-    return Z
+    return Zj_last
 
 end
 
 # Function to sample Z values
-function sample_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, samples::Int)::Tuple{Vector{Float64}, Vector{Float64}}
-    Z_samples = SharedArray{Float64}(T, samples)
+function sample_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, samples::Int)::Vector{Float64}
+    Zj_samples = zeros(Float64, 100*N*samples)
 
     roop_num = T - (r + 1)
     progressBar = Progress(samples * roop_num, 1, "Samples: ")
     ProgressMeter.update!(progressBar, 0)
 
     @sync @distributed for i in 1:samples
-        Z_samples[:, i] = simulate_ants(N, T, r, omega, alpha, progressBar)
+        Zj_last = simulate_ants(N, T, r, omega, alpha, progressBar)
+        start_idx = (i - 1) * 100 * N
+        Zj_samples[(start_idx + 1):(start_idx + 100 * N)] = Zj_last
     end
 
     println("Finished simulation")
 
-    # Calculate mean and standard deviation values
-    Z_mean = mean(Z_samples, dims=2)
-    Z_std = std(Z_samples, dims=2)
-
-    return vec(Z_mean), vec(Z_std)
+    return Zj_samples
 end
 
 end
