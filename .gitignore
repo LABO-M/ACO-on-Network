@@ -1,6 +1,7 @@
 # Ignore all files in the data directory
 data/*
 notebooks/data/*
+notebooks/fig/*
 # notebooks/network.ipynb
 .vscode/
 __pycache__/
