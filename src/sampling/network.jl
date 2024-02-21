@@ -18,24 +18,6 @@ function initialize_network(T::Int, r::Int)
     return k_in, k_out, link_matrix
 end
 
-function initialize_network(T::Int, r::Int, omega::Float64)
-    k_in = zeros(Int, T)
-    k_out = zeros(Int, T)
-    link_matrix = zeros(Int, T, r)
-    l = zeros(Float64, T)
-
-    k_out[1] = r
-
-    for t in 2:(r + 1)
-        k_in[t] = t - 1
-        k_out[t] = r - (t - 1)
-        link_matrix[t, 1:(t - 1)] .= 1:(t - 1)
-    end
-    l .= k_in .+ omega * k_out
-
-    return k_in, k_out, link_matrix, l
-end
-
 function generate_network(T::Int, r::Int, omega::Float64)
     if omega == -1.0
         return network_lattice(T, r)
