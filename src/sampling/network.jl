@@ -53,10 +53,8 @@ function network_popularity(T::Int, r::Int, omega::Float64)
             link_matrix[t, link_slot] = ant
             k_out[ant] += 1
             k_in[t] += 1
-            # 選択されたアリの人気度更新
-            # l[ant] = k_in[ant] + omega * k_out[ant]
         end
-        l[selected_ants] .= k_in[selected_ants] + omega * k_out[selected_ants]
+        l[selected_ants] .= k_in[selected_ants] .+ omega * k_out[selected_ants]
         l[t] = k_in[t] + omega * k_out[t]
     end
 
