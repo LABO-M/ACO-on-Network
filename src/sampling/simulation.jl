@@ -29,7 +29,7 @@ function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, p
     TP = zeros(Int, T)
 
     # network_popularity関数からk_out配列を取得
-    _, _, link_matrix = Network.generate_network(T, r, omega)
+    link_matrix = Network.generate_network(T, r, omega, false)
 
     # Initialization
     initialize_simulation(N, X, S, Sj, TP, r)

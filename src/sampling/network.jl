@@ -18,15 +18,15 @@ function initialize_network(T::Int, r::Int)
     return k_in, k_out, link_matrix
 end
 
-function generate_network(T::Int, r::Int, omega::Float64)
+function generate_network(T::Int, r::Int, omega::Float64, return_degree_info::Bool = true)
     if omega == -1.0
-        return network_lattice(T, r)
+        return network_lattice(T, r, return_degree_info)
     else
-        return network_popularity(T, r, omega)
+        return network_popularity(T, r, omega, return_degree_info)
     end
 end
 
-function network_popularity(T::Int, r::Int, omega::Float64)
+function network_popularity(T::Int, r::Int, omega::Float64, return_degree_info::Bool)
     # 初期条件の設定
     k_in, k_out, link_matrix = initialize_network(T, r)
     l = zeros(Float64, T)
@@ -58,10 +58,14 @@ function network_popularity(T::Int, r::Int, omega::Float64)
         end
     end
 
-    return k_in, k_out, link_matrix
+    if return_degree_info
+        return k_in, k_out, link_matrix
+    else
+        return link_matrix
+    end
 end
 
-function network_lattice(T::Int, r::Int)
+function network_lattice(T::Int, r::Int, return_degree_info::Bool)
     # 初期条件の設定
     k_in, k_out, link_matrix = initialize_network(T, r)
 
@@ -76,7 +80,11 @@ function network_lattice(T::Int, r::Int)
         link_matrix[t, :] .= (t-r):(t-1)
     end
 
-    return k_in, k_out, link_matrix
+    if return_degree_info
+        return k_in, k_out, link_matrix
+    else
+        return link_matrix
+    end
 end
 
 end
