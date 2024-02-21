@@ -30,8 +30,8 @@ function initialize_network(T::Int, r::Int, omega::Float64)
         k_in[t] = t - 1
         k_out[t] = r - (t - 1)
         link_matrix[t, 1:(t - 1)] .= 1:(t - 1)
-        l[t] = k_in[t] + omega * k_out[t]
     end
+    l .= k_in .+ omega * k_out
 
     return k_in, k_out, link_matrix, l
 end
@@ -46,7 +46,9 @@ end
 
 function network_popularity(T::Int, r::Int, omega::Float64)
     # 初期条件の設定
-    k_in, k_out, link_matrix, l = initialize_network(T, r, omega)
+    k_in, k_out, link_matrix = initialize_network(T, r)
+    l = zeros(Float64, T)
+    l .= k_in .+ omega * k_out
 
     # ネットワークの進化
     for t in (r + 2):T
@@ -63,9 +65,6 @@ function network_popularity(T::Int, r::Int, omega::Float64)
         probabilities = l[popular_ants] / total_popularity
         selected_ants = sample(popular_ants, Weights(probabilities), num_links, replace=false)
 
-        # 新しいリンクが追加されるノードの人気度更新
-        l[t] = k_in[t] + omega * k_out[t]
-
         # リンクの追加と出次数の更新
         for ant in selected_ants
             link_slot = findfirst(x -> x == 0, link_matrix[t, :])
@@ -73,8 +72,10 @@ function network_popularity(T::Int, r::Int, omega::Float64)
             k_out[ant] += 1
             k_in[t] += 1
             # 選択されたアリの人気度更新
-            l[ant] = k_in[ant] + omega * k_out[ant]
+            # l[ant] = k_in[ant] + omega * k_out[ant]
         end
+        l[selected_ants] .= k_in[selected_ants] + omega * k_out[selected_ants]
+        l[t] = k_in[t] + omega * k_out[t]
     end
 
     return k_in, k_out, link_matrix
