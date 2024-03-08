@@ -30,12 +30,15 @@ function network_popularity(T::Int, r::Int, omega::Float64)
     # 初期条件の設定
     k_in, k_out, link_matrix = initialize_network(T, r)
     l = zeros(Float64, T)
-    l .= max.(0, k_in .+ omega .* k_out)
+    l .= k_in .+ omega * k_out
 
     # ネットワークの進化
     for t in (r + 2):T
+        # 人気度が0より大きいアリを選択可能なリストに追加
+        popular_ants = findall(x -> x > 0, l)
+
         # 人気度の合計
-        total_popularity = sum(l)
+        total_popularity = sum(l[popular_ants])
 
         # 既存のノードから r または r' アリを選択
         num_links = min(r, length(popular_ants))
@@ -51,8 +54,8 @@ function network_popularity(T::Int, r::Int, omega::Float64)
             k_out[ant] += 1
             k_in[t] += 1
         end
-        l[selected_ants] .= max.(0, k_in[selected_ants] .+ omega * k_out[selected_ants])
-        l[t] = max(0, k_in[t] + omega * k_out[t])
+        l[selected_ants] .= k_in[selected_ants] .+ omega * k_out[selected_ants]
+        l[t] = k_in[t] + omega * k_out[t]
     end
 
     return k_in, k_out, link_matrix
