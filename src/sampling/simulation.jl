@@ -4,18 +4,18 @@ using Random, ProgressMeter, Statistics, Distributed, SharedArrays
 
 include("network.jl")
 
-const DEFAULT_EPSILON = 0.01  # Define epsilon as a constant at the top of the code
+# const DEFAULT_EPSILON = 0.01  # Define epsilon as a constant at the top of the code
 
 # Decision function f(z)
-function decision_function(Zj::Vector{Float64}, alpha::Float64, epsilon::Float64)::Vector{Float64}
-    return (1 - epsilon) * ((Zj.^alpha) ./ (Zj.^alpha .+ (1 .- Zj).^alpha)) .+ 0.5 * epsilon
+function decision_function(Zj::Vector{Float64}, alpha::Float64)::Vector{Float64}
+    return alpha * (Zj - 0.5) + 0.5
 end
 
 # Initialize the simulation up to the initial time r.
-function initialize_simulation(N::Int, X::Matrix{Int}, S::Vector{Float64}, Sj::Vector{Float64}, TP::Vector{Int}, r::Int)
+function initialize_simulation(N::Int, X::Matrix{Int}, S::Vector{Float64}, Sj::Vector{Float64}, E::Vector{Int}, r::Int)
     for t in 1:(r + 1)
         X[:, t] .= rand(0:1, N)
-        TP[t] = sum(X[:, t])
+        E[t] = - mean(h(2 * X[:, t] .- 1))
         S[t] = (t == 1 ? TP[t] : S[t-1] + TP[t])
         Sj .+= X[:, t] .* TP[t]
     end
@@ -26,18 +26,19 @@ function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, p
     X = zeros(Int, N, T)
     Sj = zeros(Float64, N)
     S = zeros(Float64, T)
-    TP = zeros(Int, T)
+    E = zeros(Float64, T)
+    h = 1
 
     # network_popularity関数からk_out配列を取得
     _, _, link_matrix = Network.generate_network(T, r, omega)
 
     # Initialization
-    initialize_simulation(N, X, S, Sj, TP, r)
+    initialize_simulation(N, X, S, Sj, E, r, h)
 
     # Main loop
     for t in (r + 2):T
         Zj = Sj ./ S[t-1]
-        prob = decision_function(Zj, alpha, DEFAULT_EPSILON)
+        prob = decision_function(Zj, alpha)
         rand_values = rand(Float64, N)
         X[:, t] .= rand_values .< prob
         TP[t] = sum(X[:, t])
