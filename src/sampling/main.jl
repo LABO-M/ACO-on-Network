@@ -28,7 +28,7 @@ function main(args)
 
         "--alpha"
         help = "Exponent parameter alpha"
-        default = 1.01 # 1/(1 - epsilon)
+        default = 1.0
         arg_type = Float64
 
         "--sample"
@@ -54,7 +54,7 @@ function main(args)
     Z_mean, Z_std = Simulation.sample_ants(N, T, r, omega, alpha, samples)
 
     # Output Z values to CSV
-    dir_Z = "data/Zt"
+    dir_Z = "data/ising/Zt"
     if !isdir(dir_Z)
         mkpath(dir_Z)
     end
