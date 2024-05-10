@@ -69,7 +69,7 @@ function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, h
 
         # S(k, t) の更新
         Sk = sum(X[:, linked_ants] .* exp.(-E[linked_ants])', dims=2)[:]
-        #next!(progressBar)
+        next!(progressBar)
     end
     M = 2 * alpha * (Zk .- 0.5)
     # Z = S ./ (r * N)
@@ -79,7 +79,7 @@ function simulate_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, h
 end
 
 # Function to sample Z values
-function sample_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, h::Float64, J::Float64, samples::Int)::Tuple{Vector{Float64}, Vector{Float64}}
+function sample_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, h::Float64, J::Float64, samples::Int)
     Z_samples = SharedArray{Float64}(N, samples)
 
     roop_num = T - (r + 1)
@@ -92,11 +92,9 @@ function sample_ants(N::Int, T::Int, r::Int, omega::Float64, alpha::Float64, h::
 
     #println("Finished simulation")
 
-    # Calculate mean and standard deviation values
-    Z_mean = mean(Z_samples, dims=2)
-    Z_std = std(Z_samples, dims=2)
+    M_vector = vcat(Z_samples...)
 
-    return vec(Z_mean), vec(Z_std)
+    return M_vector
 end
 
 end

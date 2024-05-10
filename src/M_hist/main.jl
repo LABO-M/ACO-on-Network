@@ -23,7 +23,7 @@ function main(args)
 
         "--omega"
         help = "weight parameter of the network"
-        default = -0.99
+        default = -0.9999
         arg_type = Float64
 
         "--alpha"
@@ -63,15 +63,15 @@ function main(args)
     #println("N = $(int_to_SI_prefix(N)), T = $(int_to_SI_prefix(T)), r = $(int_to_SI_prefix(r)), omega = $(omega), alpha = $(alpha), h = $(h), J = $(J) samples = $(int_to_SI_prefix(samples))")
 
     # Run the simulation
-    Z_mean, Z_std = Simulation.sample_ants(N, T, r, omega, alpha, h, J, samples)
+    M_vector = Simulation.sample_ants(N, T, r, omega, alpha, h, J, samples)
 
     # Output Z values to CSV
     dir_Z = "data/ising/Zt"
     if !isdir(dir_Z)
         mkpath(dir_Z)
     end
-    filename_Z = joinpath(dir_Z, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha).csv")
-    save_Z_to_csv(Z_mean, Z_std, filename_Z)
+    filename_Z = joinpath(dir_Z, "N$(int_to_SI_prefix(N))_T$(int_to_SI_prefix(T))_r$(int_to_SI_prefix(r))_omega$(omega)_alpha$(alpha)_h$(h)_J$(J).csv")
+    save_Z_to_csv(M_vector, filename_Z)
     end
 
 # Entry point of the script
