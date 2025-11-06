@@ -2,6 +2,7 @@
 data/*
 notebooks/data/*
 notebooks/fig/*
+.venv
 # notebooks/network.ipynb
 .vscode/
 __pycache__/
