@@ -1,7 +1,8 @@
 # =========================
-# 100万ノード向け：平均距離の時系列推定（無向）
+# 100万ノード向け：平均距離の時系列推定（無向）+ プロット
 # =========================
 using Random, StatsBase, Statistics
+using Plots  # 初回は: ] add Plots
 
 # ---- 無向隣接リストを直接構築する生成器 ----
 struct NetParams
@@ -25,12 +26,12 @@ function generate_network!(adj::Vector{Vector{Int32}}, p::NetParams; seed=0)
     k_out = zeros(Int32, T)
     l     = zeros(Float64, T)  # 人気度
 
-    # 初期化（あなたの initialize_network と同等の効果）
+    # 初期化（initialize_network 相当）
     k_out[1] = r
     for t in 2:(r+1)
-        k_in[t] = t-1
-        k_out[t] = r - (t-1)
-        # t が 1..(t-1) にリンクする → 無向で両側に追加
+        k_in[t] = t - 1
+        k_out[t] = r - (t - 1)
+        # t が 1..(t-1) にリンク → 無向で両側に追加
         for parent in 1:(t-1)
             push!(adj[t], Int32(parent))
             push!(adj[parent], Int32(t))
@@ -41,13 +42,11 @@ function generate_network!(adj::Vector{Vector{Int32}}, p::NetParams; seed=0)
     if ω == -1.0
         # ---- 格子モデル ----
         for t in (r+2):T
-            # t は (t-r)..(t-1) に接続
-            a = max(1, t-r)
-            for parent in a:(t-1)
+            a = max(1, t - r)
+            for parent in a:(t - 1)
                 push!(adj[t], Int32(parent))
                 push!(adj[parent], Int32(t))
             end
-            # 度更新（見た目が合うように）
             k_in[t] = r
             k_out[1:max(1, t - r - 1)] .= r
             if t - r > 0
@@ -57,9 +56,7 @@ function generate_network!(adj::Vector{Vector{Int32}}, p::NetParams; seed=0)
     else
         # ---- 人気モデル ----
         for t in (r+2):T
-            # 人気度>0 の候補
-            # （ベクトル走査は重いので、r が小さければこのままでも実用）
-            popular = findall(@view(l .> 0.0))
+            popular = findall(l .> 0.0)
             if isempty(popular)
                 continue
             end
@@ -68,14 +65,12 @@ function generate_network!(adj::Vector{Vector{Int32}}, p::NetParams; seed=0)
             probs = (@view l[popular]) ./ total_pop
             selected = sample(popular, Weights(probs), num_links; replace=false)
 
-            # エッジ追加（無向）
             for parent in selected
                 push!(adj[t], Int32(parent))
                 push!(adj[parent], Int32(t))
                 k_out[parent] += 1
                 k_in[t] += 1
             end
-            # 人気度更新（差分で十分だが簡潔に全体更新）
             @inbounds begin
                 for v in selected
                     l[v] = k_in[v] + ω*k_out[v]
@@ -85,7 +80,7 @@ function generate_network!(adj::Vector{Vector{Int32}}, p::NetParams; seed=0)
         end
     end
 
-    # 重複除去（同一親を複数回引いた場合などの保険）
+    # 重複除去（保険）
     for v in 1:T
         if length(adj[v]) > 1
             adj[v] = unique(adj[v])
@@ -100,25 +95,28 @@ mutable struct BFSWorkspace
     q::Vector{Int32}
 end
 
-function BFSWorkspace(n::Int)
-    BFSWorkspace(fill(Int32(-1), n), Vector{Int32}(undef, n))
-end
+BFSWorkspace(n::Int) = BFSWorkspace(fill(Int32(-1), n), Vector{Int32}(undef, n))
 
-@inline function bfs!(adj::Vector{Vector{Int32}}, s::Int32, ws::BFSWorkspace)
+# @view adj[1:t] でも動くよう AbstractVector を許容し、
+# 部分グラフ外（u>n）をスキップするガードを入れる
+@inline function bfs!(adj::AbstractVector{<:AbstractVector{Int32}}, s::Int32, ws::BFSWorkspace)
     dist = ws.dist; q = ws.q
     n = length(dist)
-    # reset dist to -1 (高速化のため fill! は十分速い)
     fill!(dist, Int32(-1))
     head = 1; tail = 0
-    dist[s] = 0
+    dist[Int(s)] = 0
     tail += 1; q[tail] = s
     @inbounds while head <= tail
         v = q[head]; head += 1
-        dv = dist[v] + 1
-        for u in adj[v]
+        dv = dist[Int(v)] + 1
+        for u32 in adj[Int(v)]
+            u = Int(u32)
+            if u > n || u < 1
+                continue
+            end
             if dist[u] == -1
                 dist[u] = dv
-                tail += 1; q[tail] = u
+                tail += 1; q[tail] = Int32(u)
             end
         end
     end
@@ -126,12 +124,12 @@ end
 end
 
 # ---- サンプリング平均距離（単一点→他点の平均）----
-@inline function mean_distance_from!(adj, s::Int32, ws::BFSWorkspace)
+@inline function mean_distance_from!(adj::AbstractVector{<:AbstractVector{Int32}}, s::Int32, ws::BFSWorkspace)
     dist = bfs!(adj, s, ws)
     tot::Int64 = 0
     cnt::Int64 = 0
     @inbounds for (t, d) in enumerate(dist)
-        if t == s; continue; end
+        if t == Int(s); continue; end
         if d >= 0
             tot += d
             cnt += 1
@@ -143,10 +141,10 @@ end
 """
 estimate_apl!(adj; S)
 
-ランダムに S 個の始点を取り、各始点の「他ノードまでの平均距離」を平均。
-戻り値: (μ, se)  推定平均と標準誤差
+ランダムに S 個の始点からの平均距離を取り、全体平均を推定。
+戻り値: (μ, se)
 """
-function estimate_apl!(adj::Vector{Vector{Int32}}; S::Int=256)
+function estimate_apl!(adj::AbstractVector{<:AbstractVector{Int32}}; S::Int=256)
     n = length(adj)
     ws = BFSWorkspace(n)
     samples = Float64[]
@@ -178,7 +176,6 @@ function apl_timeseries(Tmax::Int, r::Int, omega::Float64;
 
     results = Vector{Tuple{Int,Float64,Float64}}()
     for t in checkpoints
-        # 1..t の部分グラフで評価（ビュー的には adj[1:t] を渡せばOK）
         μ, se = estimate_apl!(@view adj[1:t]; S=S)
         push!(results, (t, μ, se))
         @info "APL at t=$t: $(round(μ, digits=4)) ± $(round(se, digits=4))"
@@ -186,18 +183,37 @@ function apl_timeseries(Tmax::Int, r::Int, omega::Float64;
     return results
 end
 
-# ===== 実行例 =====
-const Tmax  = 1_000_000
+# ===== 実行パラメータ =====
+const Tmax  = 100_000          # 例: 小さめで動作確認 → 本番で 1_000_000 へ
 const r     = 100
-const omega = -0.99      # -1.0 で格子
+const omega = -0.99            # -1.0 で格子、他は人気モデル
 const S     = 256
-# 対数間隔のチェックポイント（必要なら密に）
-checkpoints = floor.(Int, unique!(round.(exp.(range(log(1_000), log(Tmax), length=18)))))
+# チェックポイント（例: 線形間隔）
+checkpoints = collect(10_000:10_000:Tmax)
 
+# ===== 実行 =====
 res = apl_timeseries(Tmax, r, omega; checkpoints=checkpoints, S=S, seed=42)
 
-# 出力
+# ===== 出力（テーブル） =====
 println("t, est_apl, se")
 for (t, μ, se) in res
     println("$(t), $(round(μ, digits=4)), $(round(se, digits=4))")
 end
+
+# ===== プロット =====
+ts  = [t  for (t, μ, se) in res]
+mus = [μ  for (t, μ, se) in res]
+ses = [se for (t, μ, se) in res]
+
+# リボン（±1標準誤差）付き折れ線
+plt = plot(
+    ts, mus;
+    ribbon = ses,
+    xlabel = "ノード数 t",
+    ylabel = "平均最短距離（推定値）",
+    title  = "平均距離の時系列（S=$(S), r=$(r), ω=$(omega)）",
+    legend = false,
+)
+display(plt)
+savefig(plt, "apl_timeseries.png")   # ファイル保存（同ディレクトリ）
+println("Saved plot: apl_timeseries.png")
