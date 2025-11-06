@@ -184,10 +184,10 @@ function apl_timeseries(Tmax::Int, r::Int, omega::Float64;
 end
 
 # ===== 実行パラメータ =====
-const Tmax  = 100_000          # 例: 小さめで動作確認 → 本番で 1_000_000 へ
+const Tmax  = 1_000_000          # 例: 小さめで動作確認 → 本番で 1_000_000 へ
 const r     = 100
 const omega = -0.99            # -1.0 で格子、他は人気モデル
-const S     = 256
+const S     = 128
 # チェックポイント（例: 線形間隔）
 checkpoints = collect(10_000:10_000:Tmax)
 
@@ -209,9 +209,9 @@ ses = [se for (t, μ, se) in res]
 plt = plot(
     ts, mus;
     ribbon = ses,
-    xlabel = "ノード数 t",
-    ylabel = "平均最短距離（推定値）",
-    title  = "平均距離の時系列（S=$(S), r=$(r), ω=$(omega)）",
+    xlabel = "t",
+    ylabel = "average distance",
+    title  = "Time serieses of average distance S=$(S), r=$(r), ω=$(omega))",
     legend = false,
 )
 display(plt)
