@@ -1,6 +1,16 @@
 using ArgParse
+using Distributed
 include("simulation.jl")
 include("output.jl")
+
+# ワーカーにも同じファイルを読み込ませる
+@everywhere begin
+    if myid() != 1
+        include(joinpath(@__DIR__, "simulation.jl"))
+        include(joinpath(@__DIR__, "output.jl"))  # なくてもOKだが合わせて配布
+    end
+end
+
 
 function main(args)
     s = ArgParseSettings()
