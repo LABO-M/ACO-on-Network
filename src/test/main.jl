@@ -76,7 +76,7 @@ function main(args)
     M_vector = Simulation.sample_ants(N, T, r, omega, alpha, h, J, samples)
 
     # Output Z values to CSV
-    dir_Z = "data/ising/Zt"
+    dir_Z = "data"
     if !isdir(dir_Z)
         mkpath(dir_Z)
     end
