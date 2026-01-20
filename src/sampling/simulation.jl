@@ -14,7 +14,7 @@ function calculate_energy(N::Int, X::Vector{Int}, h::Float64, J::Float64)::Float
         s += (X[i] == 1 ? 1 : -1)               # σ_i = 2X_i - 1
     end
     # Σ_{i≠j} σ_iσ_j = (Σσ)^2 - N
-    return -h * s - (J / (N - 1)) * (s * s - N)
+    return -h * s - (J / 2*(N - 1)) * (s * s - N)
 end
 
 # --- 初期化：t=1..r+1 はランダム（S/Skは初期化せずEのみ整える） ---
